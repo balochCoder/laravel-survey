@@ -4,8 +4,8 @@ import axiosClient from "../axios";
 const tmpSurveys = [
   {
     id: 1,
-    title: "TheCodeholic YouTube channel content",
-    slug: "thecodeholic-youtube-channel-content",
+    title: "The Codeholic YouTube channel content",
+    slug: "the-codeholic-youtube-channel-content",
     status: "draft",
     image:
       "https://pbs.twimg.com/profile_images/1118059535003017221/9ZwEYqj2_400x400.png",
@@ -174,6 +174,7 @@ const store = createStore({
       token: sessionStorage.getItem("TOKEN"),
     },
     surveys: [...tmpSurveys],
+    questionTypes:["text","select","radio","checkbox","textarea"]
   },
   getters: {},
   actions: {

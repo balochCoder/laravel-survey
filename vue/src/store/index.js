@@ -235,6 +235,13 @@ const store = createStore({
 
       return response;
     },
+
+    deleteSurvey({ dispatch }, id) {
+      return axiosClient.delete(`/survey/${id}`).then((res) => {
+        dispatch('getSurveys')
+        return res;
+      });
+    },
   },
   mutations: {
    

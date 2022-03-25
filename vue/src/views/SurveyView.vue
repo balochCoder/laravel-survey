@@ -9,6 +9,7 @@
     </template>
 
     <form @submit.prevent="saveSurvey">
+      {{ model }}
       <div class="shadow sm:rounded-md sm:overflow-hidden">
         <!-- Survey Fields -->
         <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
@@ -19,8 +20,8 @@
             >
             <div class="mt-1 flex items-center">
               <img
-                v-if="model.image"
-                :src="model.image"
+                v-if="model.image_url"
+                :src="model.image_url"
                 :alt="model.title"
                 class="w-64 h-48 object-cover"
               />
@@ -77,6 +78,7 @@
               >
                 <input
                   type="file"
+                  @change="onImageChoose"
                   class="
                     absolute
                     left-0
@@ -284,26 +286,46 @@
 <script setup>
 import { v4 as uuidv4 } from "uuid";
 import store from "../store";
-import { ref } from "vue";
-import { useRoute } from "vue-router";
+import { ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import PageComponent from "../components/PageComponent.vue";
 import QuestionEditor from "../components/editor/QuestionEditor.vue";
 
+const router = useRouter();
 const route = useRoute();
 
 let model = ref({
   title: "",
   status: false,
   description: null,
-  image: null,
+  image_url: null,
   expire_date: null,
   questions: [],
 });
-
+// Watch to current survey data change and when this happens we update local model
+watch(
+  () => store.state.currentSurvey.data,
+  (newVal, oldVal) => {
+    model.value = {
+      ...JSON.parse(JSON.stringify(newVal)),
+      status: newVal.status !== "draft",
+    };
+  }
+);
 if (route.params.id) {
-  model.value = store.state.surveys.find(
-    (s) => s.id === parseInt(route.params.id)
-  );
+  store.dispatch("getSurvey", route.params.id);
+}
+
+function onImageChoose(ev) {
+  const file = ev.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    // The field to send on backend and apply validations
+    model.value.image = reader.result;
+    // The field to display here
+    model.value.image_url = reader.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function addQuestion(index) {
@@ -333,6 +355,39 @@ function questionChange(question) {
     }
     return q;
   });
+}
+
+/**
+ * Create or update survey
+ */
+function saveSurvey() {
+  let action = "created";
+  if (model.value.id) {
+    action = "updated";
+  }
+  store.dispatch("saveSurvey", { ...model.value }).then(({ data }) => {
+    store.commit("notify", {
+      type: "success",
+      message: "The survey was successfully " + action,
+    });
+    router.push({
+      name: "SurveyView",
+      params: { id: data.data.id },
+    });
+  });
+}
+function deleteSurvey() {
+  if (
+    confirm(
+      `Are you sure you want to delete this survey? Operation can't be undone!!`
+    )
+  ) {
+    store.dispatch("deleteSurvey", model.value.id).then(() => {
+      router.push({
+        name: "Surveys",
+      });
+    });
+  }
 }
 </script>
 
